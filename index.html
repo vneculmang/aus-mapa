@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa con CSV y Leaflet</title>
+    <title>Mapa con CSV, Geocodificación Inversa y Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map {
@@ -33,7 +33,7 @@
 </head>
 <body>
 
-<h2>Mapa de las calles recorridas desde múltiples archivos CSV</h2>
+<h2>Mapa con Geocodificación Inversa (Nombres de calles) y CSV</h2>
 <!-- Input para permitir múltiples archivos CSV -->
 <input type="file" id="fileInput" accept=".csv" multiple />
 <br>
@@ -82,6 +82,7 @@
                     header: false, // No tiene encabezado, usamos los índices de columna
                     complete: function(results) {
                         var puntos = [];
+                        var streetNames = []; // Para almacenar los nombres de las calles
 
                         // Itera sobre cada fila y extrae las coordenadas de las columnas correctas
                         results.data.forEach(function(row) {
@@ -91,6 +92,28 @@
                             // Asegurarse de que las coordenadas sean válidas antes de agregarlas
                             if (!isNaN(latitud) && !isNaN(longitud)) {
                                 puntos.push([latitud, longitud]); // Añade latitud y longitud al array de puntos
+
+                                // Hacer una consulta a Nominatim para obtener el nombre de la calle
+                                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitud}&lon=${longitud}`)
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.address && data.address.road) {
+                                            streetNames.push(data.address.road); // Guardar el nombre de la calle
+                                        } else {
+                                            streetNames.push('Calle desconocida'); // Si no se encuentra, poner un texto por defecto
+                                        }
+
+                                        // Dibujar las etiquetas de las calles en el mapa
+                                        if (streetNames.length === puntos.length) {
+                                            streetNames.forEach((street, idx) => {
+                                                L.marker(puntos[idx]).bindPopup(street).addTo(map);
+                                            });
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error obteniendo el nombre de la calle:', error);
+                                        streetNames.push('Error al obtener la calle');
+                                    });
                             }
                         });
 
