@@ -16,6 +16,18 @@
             font-weight: bold;
             color: #333;
         }
+        #processButton {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #processButton:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -23,8 +35,10 @@
 <h2>Mapa de las calles recorridas desde un archivo CSV</h2>
 <!-- Input para que el usuario cargue su archivo CSV -->
 <input type="file" id="fileInput" accept=".csv" />
+<!-- Botón para procesar el archivo -->
+<button id="processButton">Procesar Archivo</button>
 <!-- Mensaje de estado -->
-<div id="status">Selecciona un archivo CSV para cargar.</div>
+<div id="status">Selecciona un archivo CSV y presiona el botón para cargar.</div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -40,17 +54,27 @@
 
     // Elemento para mostrar el estado
     var statusElement = document.getElementById('status');
+    var processButton = document.getElementById('processButton');
+    var selectedFile = null; // Variable para almacenar el archivo seleccionado
 
-    // Función para procesar el archivo CSV una vez que el usuario lo sube
+    // Guardar el archivo seleccionado en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
-        var file = event.target.files[0]; // Obtiene el archivo subido
+        selectedFile = event.target.files[0]; // Obtiene el archivo seleccionado
+        if (selectedFile) {
+            statusElement.textContent = 'Archivo seleccionado: ' + selectedFile.name + '. Ahora presiona "Procesar Archivo".';
+        } else {
+            statusElement.textContent = 'No se seleccionó ningún archivo.';
+        }
+    });
 
-        if (file) {
+    // Función para procesar el archivo cuando se presiona el botón
+    processButton.addEventListener('click', function() {
+        if (selectedFile) {
             // Muestra el mensaje de estado mientras se procesa
             statusElement.textContent = 'Procesando el archivo...';
 
             // Usa PapaParse para leer el archivo CSV
-            Papa.parse(file, {
+            Papa.parse(selectedFile, {
                 header: false, // No tiene encabezado, usamos los índices de columna
                 complete: function(results) {
                     var puntos = [];
@@ -75,7 +99,7 @@
                         map.fitBounds(polyline.getBounds());
 
                         // Actualizar el mensaje de estado
-                        statusElement.textContent = 'Archivo procesado y ruta dibujada en el mapa.';
+                        statusElement.textContent = 'Archivo procesado exitosamente. La ruta está dibujada en el mapa.';
                     } else {
                         // Si no hay puntos válidos, mostrar un error
                         statusElement.textContent = 'No se encontraron puntos válidos en el archivo.';
@@ -87,7 +111,7 @@
                 }
             });
         } else {
-            statusElement.textContent = 'No se seleccionó ningún archivo.';
+            statusElement.textContent = 'Por favor selecciona un archivo CSV primero.';
         }
     });
 </script>
