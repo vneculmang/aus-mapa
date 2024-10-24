@@ -58,6 +58,7 @@
     var statusElement = document.getElementById('status');
     var processButton = document.getElementById('processButton');
     var selectedFiles = []; // Variable para almacenar los archivos seleccionados
+    var allBounds = []; // Para almacenar los bounds de todas las rutas
 
     // Guardar los archivos seleccionados en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -73,6 +74,7 @@
     processButton.addEventListener('click', function() {
         if (selectedFiles.length > 0) {
             statusElement.textContent = 'Procesando archivos...';
+            allBounds = []; // Reiniciar bounds para evitar problemas
 
             // Procesar cada archivo de forma independiente
             Array.from(selectedFiles).forEach(function(file, index) {
@@ -98,11 +100,36 @@
                             var colors = ['blue', 'green', 'red', 'orange', 'purple']; // Colores para las rutas
                             var polyline = L.polyline(puntos, {color: colors[index % colors.length]}).addTo(map);
 
+                            // Obtener los bounds de la polyline
+                            var bounds = polyline.getBounds();
+                            allBounds.push(bounds); // Agregar bounds a la lista
+
+                            // Ajustar los bounds globales para incluir la ruta actual
+                            var globalBounds = allBounds.reduce(function(acc, bound) {
+                                return acc.extend(bound);
+                            }, L.latLngBounds(allBounds[0]));
+
                             // Ajustar el zoom para que la ruta completa sea visible en el mapa
-                            map.fitBounds(polyline.getBounds());
+                            map.fitBounds(globalBounds);
 
                             // Actualizar el mensaje de estado
                             statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
                         } else {
                             // Si no hay puntos válidos, mostrar un error
-  
+                            statusElement.textContent = 'No se encontraron puntos válidos en el archivo: ' + file.name;
+                        }
+                    },
+                    error: function() {
+                        // Si ocurre un error al leer el archivo CSV
+                        statusElement.textContent = 'Error al procesar el archivo: ' + file.name;
+                    }
+                });
+            });
+        } else {
+            statusElement.textContent = 'Por favor selecciona al menos un archivo CSV.';
+        }
+    });
+</script>
+
+</body>
+</html>
