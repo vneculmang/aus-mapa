@@ -126,25 +126,30 @@
 
     // Función para convertir las fechas
     function convertirFecha(fechaISO) {
-        // Separar la parte de la fecha y la hora usando la "T"
-        const [fecha, hora] = fechaISO.split('T');
-        const [horaCompleta] = hora.split('.'); // Ignorar la parte de los milisegundos
+        try {
+            // Separar la parte de la fecha y la hora usando la "T"
+            const [fecha, hora] = fechaISO.split('T');
+            const [horaCompleta] = hora.split('.'); // Ignorar la parte de los milisegundos
 
-        // Extraer día, mes, año de la fecha
-        const [anio, mes, dia] = fecha.split('-').map(Number);
+            // Extraer día, mes, año de la fecha
+            const [anio, mes, dia] = fecha.split('-').map(Number);
 
-        // Extraer hora, minutos, segundos de la hora
-        const [horas, minutos, segundos] = horaCompleta.split(':').map(Number);
+            // Extraer hora, minutos, segundos de la hora
+            const [horas, minutos, segundos] = horaCompleta.split(':').map(Number);
 
-        return {
-            dia: dia,
-            mes: mes,
-            anio: anio,
-            hora: horas,
-            minutos: minutos,
-            segundos: segundos,
-            fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
-        };
+            return {
+                dia: dia,
+                mes: mes,
+                anio: anio,
+                hora: horas,
+                minutos: minutos,
+                segundos: segundos,
+                fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
+            };
+        } catch (error) {
+            console.error("Error al convertir fecha: ", error);
+            return null; // Retorna null si hay algún error al convertir la fecha
+        }
     }
 
     // Función para calcular la diferencia de tiempo en horas, minutos y segundos
@@ -212,11 +217,11 @@
                             const longitud = parseFloat(row[4]); // Columna 5: longitud (índice 4)
                             const fechaCaptura = convertirFecha(row[1]);  // Columna 2: fecha (índice 1)
 
-                            if (!isNaN(latitud) && !isNaN(longitud)) {
+                            // Solo añadir puntos válidos
+                            if (!isNaN(latitud) && !isNaN(longitud) && fechaCaptura !== null) {
                                 puntos.push([latitud, longitud]); // Añade latitud y longitud al array de puntos
+                                fechasCaptura.push(fechaCaptura); // Guardar la fecha capturada
                             }
-
-                            fechasCaptura.push(fechaCaptura); // Guardar todas las fechas para análisis
                         });
 
                         // Verificar si hay puntos válidos
