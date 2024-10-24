@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa con CSV, Geocodificación Inversa y Leaflet</title>
+    <title>Mapa con CSV y Leaflet</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map {
@@ -29,11 +29,27 @@
         #processButton:hover {
             background-color: #0056b3;
         }
+        #routeList {
+            margin-top: 20px;
+        }
+        .routeItem {
+            margin-bottom: 10px;
+        }
+        .routeButton {
+            padding: 5px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .routeButton:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
 
-<h2>Mapa con Geocodificación Inversa (Nombres de calles) y CSV</h2>
+<h2>Mapa de las rutas desde múltiples archivos CSV</h2>
 <!-- Input para permitir múltiples archivos CSV -->
 <input type="file" id="fileInput" accept=".csv" multiple />
 <br>
@@ -41,6 +57,8 @@
 <button id="processButton">Procesar Archivos</button>
 <!-- Mensaje de estado -->
 <div id="status">Selecciona los archivos CSV y presiona el botón para cargarlos.</div>
+<!-- Div para mostrar la lista de rutas -->
+<div id="routeList"></div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -54,11 +72,13 @@
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Elemento para mostrar el estado
+    // Elementos para el estado y la lista de rutas
     var statusElement = document.getElementById('status');
     var processButton = document.getElementById('processButton');
+    var routeListElement = document.getElementById('routeList');
     var selectedFiles = []; // Variable para almacenar los archivos seleccionados
     var allBounds = []; // Para almacenar los bounds de todas las rutas
+    var polylines = []; // Para almacenar las rutas dibujadas
 
     // Guardar los archivos seleccionados en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -75,6 +95,8 @@
         if (selectedFiles.length > 0) {
             statusElement.textContent = 'Procesando archivos...';
             allBounds = []; // Reiniciar bounds para evitar problemas
+            polylines = []; // Reiniciar las rutas
+            routeListElement.innerHTML = ''; // Limpiar la lista de rutas
 
             // Procesar cada archivo de forma independiente
             Array.from(selectedFiles).forEach(function(file, index) {
@@ -82,7 +104,6 @@
                     header: false, // No tiene encabezado, usamos los índices de columna
                     complete: function(results) {
                         var puntos = [];
-                        var streetNames = []; // Para almacenar los nombres de las calles
 
                         // Itera sobre cada fila y extrae las coordenadas de las columnas correctas
                         results.data.forEach(function(row) {
@@ -92,28 +113,6 @@
                             // Asegurarse de que las coordenadas sean válidas antes de agregarlas
                             if (!isNaN(latitud) && !isNaN(longitud)) {
                                 puntos.push([latitud, longitud]); // Añade latitud y longitud al array de puntos
-
-                                // Hacer una consulta a Nominatim para obtener el nombre de la calle
-                                fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitud}&lon=${longitud}`)
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data.address && data.address.road) {
-                                            streetNames.push(data.address.road); // Guardar el nombre de la calle
-                                        } else {
-                                            streetNames.push('Calle desconocida'); // Si no se encuentra, poner un texto por defecto
-                                        }
-
-                                        // Dibujar las etiquetas de las calles en el mapa
-                                        if (streetNames.length === puntos.length) {
-                                            streetNames.forEach((street, idx) => {
-                                                L.marker(puntos[idx]).bindPopup(street).addTo(map);
-                                            });
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error('Error obteniendo el nombre de la calle:', error);
-                                        streetNames.push('Error al obtener la calle');
-                                    });
                             }
                         });
 
@@ -122,18 +121,25 @@
                             // Dibujar la ruta en el mapa para cada archivo, cada uno con un color distinto
                             var colors = ['blue', 'green', 'red', 'orange', 'purple']; // Colores para las rutas
                             var polyline = L.polyline(puntos, {color: colors[index % colors.length]}).addTo(map);
+                            polylines.push(polyline); // Guardar la ruta
 
                             // Obtener los bounds de la polyline
                             var bounds = polyline.getBounds();
                             allBounds.push(bounds); // Agregar bounds a la lista
 
-                            // Ajustar los bounds globales para incluir la ruta actual
-                            var globalBounds = allBounds.reduce(function(acc, bound) {
-                                return acc.extend(bound);
-                            }, L.latLngBounds(allBounds[0]));
+                            // Añadir la ruta a la lista con un botón de zoom
+                            var routeItem = document.createElement('div');
+                            routeItem.classList.add('routeItem');
+                            routeItem.innerHTML = `
+                                <strong>Ruta ${index + 1} - Color: ${colors[index % colors.length]}</strong>
+                                <button class="routeButton" data-index="${index}">Zoom a esta ruta</button>
+                            `;
+                            routeListElement.appendChild(routeItem);
 
-                            // Ajustar el zoom para que la ruta completa sea visible en el mapa
-                            map.fitBounds(globalBounds);
+                            // Añadir evento al botón de zoom
+                            routeItem.querySelector('.routeButton').addEventListener('click', function() {
+                                map.fitBounds(polylines[index].getBounds()); // Hacer zoom a la ruta seleccionada
+                            });
 
                             // Actualizar el mensaje de estado
                             statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
