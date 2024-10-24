@@ -36,18 +36,19 @@
 
         // Usa PapaParse para leer el archivo CSV
         Papa.parse(file, {
-            header: true, // Considera que la primera fila es el encabezado (latitud, longitud)
+            header: false, // No tiene encabezado, usamos los índices de columna
             complete: function(results) {
                 var puntos = [];
 
-                // Itera sobre cada fila y extrae las coordenadas de latitud y longitud
+                // Itera sobre cada fila y extrae las coordenadas de las columnas correctas
                 results.data.forEach(function(row) {
-                    var latitud = parseFloat(row.latitud);
-                    var longitud = parseFloat(row.longitud);
+                    var latitud = parseFloat(row[3]);  // Columna 4: latitud (índice 3)
+                    var longitud = parseFloat(row[4]); // Columna 5: longitud (índice 4)
+                    var altitud = parseFloat(row[5]);  // Columna 6: altitud (índice 5), opcional
 
                     // Asegurarse de que las coordenadas sean válidas antes de agregarlas
                     if (!isNaN(latitud) && !isNaN(longitud)) {
-                        puntos.push([latitud, longitud]);
+                        puntos.push([latitud, longitud]); // Añade latitud y longitud al array de puntos
                     }
                 });
 
