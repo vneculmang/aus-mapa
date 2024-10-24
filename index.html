@@ -126,21 +126,24 @@
 
     // Función para convertir las fechas
     function convertirFecha(fechaISO) {
-        const fecha = new Date(fechaISO);
-        const dia = fecha.getDate();
-        const mes = fecha.getMonth() + 1; // Los meses van de 0 a 11
-        const anio = fecha.getFullYear();
-        const hora = fecha.getHours();
-        const minutos = fecha.getMinutes();
-        const segundos = fecha.getSeconds();
+        // Separar la parte de la fecha y la hora usando la "T"
+        const [fecha, hora] = fechaISO.split('T');
+        const [horaCompleta] = hora.split('.'); // Ignorar la parte de los milisegundos
+
+        // Extraer día, mes, año de la fecha
+        const [anio, mes, dia] = fecha.split('-').map(Number);
+
+        // Extraer hora, minutos, segundos de la hora
+        const [horas, minutos, segundos] = horaCompleta.split(':').map(Number);
+
         return {
             dia: dia,
             mes: mes,
             anio: anio,
-            hora: hora,
+            hora: horas,
             minutos: minutos,
             segundos: segundos,
-            fechaCompleta: fecha // Para cálculos de tiempo
+            fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
         };
     }
 
@@ -233,8 +236,6 @@
                             const primeraFecha = fechasCaptura[0];
                             const ultimaFecha = fechasCaptura[fechasCaptura.length - 1];
                             const tiempoTotal = calcularTiempoTotal(primeraFecha.fechaCompleta, ultimaFecha.fechaCompleta);
-
-                            // Calcular la distancia total recorrida
                             const distanciaTotal = calcularDistanciaTotal(puntos);
 
                             // Añadir la ruta a la lista con un botón de zoom
@@ -251,7 +252,7 @@
                                 specificZoom = true; // Marcar que se está haciendo un zoom específico
                                 map.fitBounds(polyline.getBounds()); // Hacer zoom solo a la ruta seleccionada
                                 
-                                // Mostrar la información del archivo, tiempos y distancia
+                                // Mostrar la información del archivo y los tiempos
                                 fileDisplayElement.innerHTML = `
                                     <strong>Archivo seleccionado:</strong> ${file.name}<br>
                                     <strong>Fechas capturadas:</strong> ${fechasUnicas.join(', ')}<br>
