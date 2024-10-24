@@ -50,4 +50,12 @@
                 // Dibujar la ruta en el mapa usando las coordenadas
                 var polyline = L.polyline(puntos, {color: 'orange'}).addTo(map);
                 
-                // 
+                // Ajustar el zoom para que la ruta completa se vea en el mapa
+                map.fitBounds(polyline.getBounds());
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
