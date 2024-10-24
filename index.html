@@ -170,7 +170,7 @@
 
                             // Añadir evento al botón de zoom
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
-                                map.fitBounds(polylines[index].getBounds()); // Hacer zoom a la ruta seleccionada
+                                map.fitBounds(polyline.getBounds()); // Hacer zoom solo a la ruta seleccionada
                             });
                         } else {
                             // Si no hay puntos válidos, mostrar un error
@@ -193,7 +193,7 @@
 
                     map.fitBounds(globalBounds); // Ajustar el zoom para mostrar todas las rutas
                 }
-            }, 500); // Espera a que todas las rutas se procesen antes de ajustar el zoom
+            }, 500); // Espera a que todas las rutas se procesen antes de ajustar el zoom global
 
             statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
         } else {
