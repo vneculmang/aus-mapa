@@ -6,9 +6,28 @@
     <title>Mapa de Rutas con CSV</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+        }
         #map {
-            height: 600px;
-            width: 100%;
+            height: 100%;
+            width: 70%;
+        }
+        #sidebar {
+            width: 30%;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: #f4f4f4;
+            border-left: 1px solid #ccc;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        #controls {
+            margin-bottom: 20px;
         }
         #status {
             margin-top: 10px;
@@ -17,9 +36,9 @@
             color: #333;
         }
         #fileInput, #processButton {
-            margin-top: 10px;
             padding: 10px;
             font-size: 16px;
+            margin-right: 10px;
         }
         #processButton {
             background-color: #007bff;
@@ -50,16 +69,23 @@
 </head>
 <body>
 
-<h2>Mapa de Rutas desde Múltiples Archivos CSV</h2>
-<!-- Input para permitir múltiples archivos CSV -->
-<input type="file" id="fileInput" accept=".csv" multiple />
-<!-- Botón para procesar los archivos al lado de la selección -->
-<button id="processButton">Procesar Archivos</button>
-<!-- Mensaje de estado -->
-<div id="status">Selecciona los archivos CSV y presiona el botón para cargarlos.</div>
-<!-- Div para mostrar la lista de rutas -->
-<div id="routeList"></div>
+<!-- Mapa a la izquierda -->
 <div id="map"></div>
+
+<!-- Sección de rutas y controles en el costado derecho -->
+<div id="sidebar">
+    <div id="controls">
+        <h2>Rutas desde Múltiples Archivos CSV</h2>
+        <!-- Input para permitir múltiples archivos CSV -->
+        <input type="file" id="fileInput" accept=".csv" multiple />
+        <!-- Botón para procesar los archivos al lado de la selección -->
+        <button id="processButton">Procesar Archivos</button>
+        <!-- Mensaje de estado -->
+        <div id="status">Selecciona los archivos CSV y presiona el botón para cargarlos.</div>
+    </div>
+    <!-- Div para mostrar la lista de rutas -->
+    <div id="routeList"></div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
@@ -129,7 +155,9 @@
 
                             // Obtener los bounds de la polyline
                             var bounds = polyline.getBounds();
-                            allBounds.push(bounds); // Agregar bounds a la lista
+                            if (bounds.isValid()) {
+                                allBounds.push(bounds); // Agregar bounds a la lista
+                            }
 
                             // Añadir la ruta a la lista con un botón de zoom
                             var routeItem = document.createElement('div');
