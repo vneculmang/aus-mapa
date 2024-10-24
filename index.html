@@ -65,6 +65,13 @@
         .routeButton:hover {
             background-color: #218838;
         }
+        #fileDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -85,6 +92,8 @@
     </div>
     <!-- Div para mostrar la lista de rutas -->
     <div id="routeList"></div>
+    <!-- Div para mostrar el nombre del archivo correspondiente a la ruta -->
+    <div id="fileDisplay">Archivo seleccionado: Ninguno</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -102,14 +111,15 @@
     var statusElement = document.getElementById('status');
     var processButton = document.getElementById('processButton');
     var routeListElement = document.getElementById('routeList');
+    var fileDisplayElement = document.getElementById('fileDisplay');
     var selectedFiles = []; // Variable para almacenar los archivos seleccionados
     var allBounds = []; // Para almacenar los bounds de todas las rutas
     var polylines = []; // Para almacenar las rutas dibujadas
 
     // Colores para las rutas (en inglés para Leaflet)
-    var colorsInMap = ['blue', 'green', 'red', 'orange', 'purple'];
+    var colorsInMap = ['blue', 'green', 'red', 'orange', 'purple', 'cyan', 'magenta', 'yellow', 'lime', 'brown', 'pink', 'gray', 'olive', 'teal', 'navy'];
     // Colores para mostrar en la interfaz (en español)
-    var colorsInDisplay = ['azul', 'verde', 'rojo', 'naranja', 'morado'];
+    var colorsInDisplay = ['azul', 'verde', 'rojo', 'naranja', 'morado', 'cian', 'magenta', 'amarillo', 'lima', 'marrón', 'rosado', 'gris', 'oliva', 'turquesa', 'azul marino'];
 
     // Variable para controlar si se está haciendo zoom a una ruta específica
     var specificZoom = false;
@@ -176,6 +186,7 @@
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
                                 specificZoom = true; // Marcar que se está haciendo un zoom específico
                                 map.fitBounds(polyline.getBounds()); // Hacer zoom solo a la ruta seleccionada
+                                fileDisplayElement.textContent = 'Archivo seleccionado: ' + file.name; // Mostrar el nombre del archivo
                             });
                         } else {
                             // Si no hay puntos válidos, mostrar un error
