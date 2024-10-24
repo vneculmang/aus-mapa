@@ -105,12 +105,14 @@
     var selectedFiles = []; // Variable para almacenar los archivos seleccionados
     var allBounds = []; // Para almacenar los bounds de todas las rutas
     var polylines = []; // Para almacenar las rutas dibujadas
-    var zoomingToSpecificRoute = false; // Nueva variable para controlar el zoom individual
 
     // Colores para las rutas (en inglés para Leaflet)
     var colorsInMap = ['blue', 'green', 'red', 'orange', 'purple'];
     // Colores para mostrar en la interfaz (en español)
     var colorsInDisplay = ['azul', 'verde', 'rojo', 'naranja', 'morado'];
+
+    // Variable para controlar si se está haciendo zoom a una ruta específica
+    var specificZoom = false;
 
     // Guardar los archivos seleccionados en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
@@ -129,7 +131,7 @@
             allBounds = []; // Reiniciar bounds para evitar problemas
             polylines = []; // Reiniciar las rutas
             routeListElement.innerHTML = ''; // Limpiar la lista de rutas
-            zoomingToSpecificRoute = false; // Restablecer la variable al procesar los archivos
+            specificZoom = false; // Restablecer la variable del zoom
 
             // Procesar cada archivo de forma independiente
             Array.from(selectedFiles).forEach(function(file, index) {
@@ -172,7 +174,7 @@
 
                             // Añadir evento al botón de zoom
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
-                                zoomingToSpecificRoute = true; // Activar el zoom individual
+                                specificZoom = true; // Marcar que se está haciendo un zoom específico
                                 map.fitBounds(polyline.getBounds()); // Hacer zoom solo a la ruta seleccionada
                             });
                         } else {
@@ -187,9 +189,9 @@
                 });
             });
 
-            // Ajustar el zoom globalmente para que todas las rutas sean visibles solo si no se ha hecho un zoom individual
+            // Ajustar el zoom globalmente para que todas las rutas sean visibles solo si no se ha hecho un zoom específico
             setTimeout(function() {
-                if (!zoomingToSpecificRoute && allBounds.length > 0) {
+                if (!specificZoom && allBounds.length > 0) {
                     var globalBounds = allBounds.reduce(function(acc, bound) {
                         return acc.extend(bound);
                     }, L.latLngBounds(allBounds[0]));
