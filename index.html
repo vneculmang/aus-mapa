@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa con CSV y Leaflet</title>
+    <title>Mapa de Rutas con CSV</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map {
@@ -16,15 +16,16 @@
             font-weight: bold;
             color: #333;
         }
-        #processButton {
+        #fileInput, #processButton {
             margin-top: 10px;
             padding: 10px;
+            font-size: 16px;
+        }
+        #processButton {
             background-color: #007bff;
             color: white;
             border: none;
             cursor: pointer;
-            font-size: 16px;
-            display: inline-block;
         }
         #processButton:hover {
             background-color: #0056b3;
@@ -49,11 +50,10 @@
 </head>
 <body>
 
-<h2>Mapa de las rutas desde múltiples archivos CSV</h2>
+<h2>Mapa de Rutas desde Múltiples Archivos CSV</h2>
 <!-- Input para permitir múltiples archivos CSV -->
 <input type="file" id="fileInput" accept=".csv" multiple />
-<br>
-<!-- Botón para procesar los archivos -->
+<!-- Botón para procesar los archivos al lado de la selección -->
 <button id="processButton">Procesar Archivos</button>
 <!-- Mensaje de estado -->
 <div id="status">Selecciona los archivos CSV y presiona el botón para cargarlos.</div>
@@ -119,7 +119,7 @@
                         // Verificar si hay puntos válidos
                         if (puntos.length > 0) {
                             // Dibujar la ruta en el mapa para cada archivo, cada uno con un color distinto
-                            var colors = ['blue', 'green', 'red', 'orange', 'purple']; // Colores para las rutas
+                            var colors = ['azul', 'verde', 'rojo', 'naranja', 'morado']; // Colores para las rutas
                             var polyline = L.polyline(puntos, {color: colors[index % colors.length]}).addTo(map);
                             polylines.push(polyline); // Guardar la ruta
 
@@ -140,9 +140,6 @@
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
                                 map.fitBounds(polylines[index].getBounds()); // Hacer zoom a la ruta seleccionada
                             });
-
-                            // Actualizar el mensaje de estado
-                            statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
                         } else {
                             // Si no hay puntos válidos, mostrar un error
                             statusElement.textContent = 'No se encontraron puntos válidos en el archivo: ' + file.name;
@@ -154,6 +151,19 @@
                     }
                 });
             });
+
+            // Ajustar el zoom globalmente para que todas las rutas sean visibles
+            setTimeout(function() {
+                if (allBounds.length > 0) {
+                    var globalBounds = allBounds.reduce(function(acc, bound) {
+                        return acc.extend(bound);
+                    }, L.latLngBounds(allBounds[0]));
+
+                    map.fitBounds(globalBounds); // Ajustar el zoom para mostrar todas las rutas
+                }
+            }, 500); // Espera a que todas las rutas se procesen antes de ajustar el zoom
+
+            statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
         } else {
             statusElement.textContent = 'Por favor selecciona al menos un archivo CSV.';
         }
