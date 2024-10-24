@@ -80,6 +80,11 @@
     var allBounds = []; // Para almacenar los bounds de todas las rutas
     var polylines = []; // Para almacenar las rutas dibujadas
 
+    // Colores para las rutas (en inglés para Leaflet)
+    var colorsInMap = ['blue', 'green', 'red', 'orange', 'purple'];
+    // Colores para mostrar en la interfaz (en español)
+    var colorsInDisplay = ['azul', 'verde', 'rojo', 'naranja', 'morado'];
+
     // Guardar los archivos seleccionados en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
         selectedFiles = event.target.files; // Obtiene los archivos seleccionados
@@ -118,9 +123,8 @@
 
                         // Verificar si hay puntos válidos
                         if (puntos.length > 0) {
-                            // Dibujar la ruta en el mapa para cada archivo, cada uno con un color distinto
-                            var colors = ['azul', 'verde', 'rojo', 'naranja', 'morado']; // Colores para las rutas
-                            var polyline = L.polyline(puntos, {color: colors[index % colors.length]}).addTo(map);
+                            // Dibujar la ruta en el mapa para cada archivo
+                            var polyline = L.polyline(puntos, {color: colorsInMap[index % colorsInMap.length]}).addTo(map);
                             polylines.push(polyline); // Guardar la ruta
 
                             // Obtener los bounds de la polyline
@@ -131,7 +135,7 @@
                             var routeItem = document.createElement('div');
                             routeItem.classList.add('routeItem');
                             routeItem.innerHTML = `
-                                <strong>Ruta ${index + 1} - Color: ${colors[index % colors.length]}</strong>
+                                <strong>Ruta ${index + 1} - Color: ${colorsInDisplay[index % colorsInDisplay.length]}</strong>
                                 <button class="routeButton" data-index="${index}">Zoom a esta ruta</button>
                             `;
                             routeListElement.appendChild(routeItem);
