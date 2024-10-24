@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa con Leaflet</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Mapa de las calles recorridas</h2>
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Inicializar el mapa y configurarlo para centrarse en Santiago de Chile
+    var map = L.map('map').setView([-33.45, -70.65], 13);
+
+    // Cargar una capa de mosaico para el mapa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Coordenadas de tu recorrido
+    var puntos = [
+        [-33.4500, -70.6653],
+        [-33.4508, -70.6601],
+        [-33.4550, -70.6590]
+        // Añade el resto de tus coordenadas aquí...
+    ];
+
+    // Dibujar la ruta en el mapa usando un polyline
+    var polyline = L.polyline(puntos, {color: 'orange'}).addTo(map);
+
+    // Ajustar el zoom para que la ruta completa se vea en el mapa
+    map.fitBounds(polyline.getBounds());
+</script>
+
+</body>
+</html>
