@@ -124,64 +124,15 @@
     // Variable para controlar si se está haciendo zoom a una ruta específica
     var specificZoom = false;
 
-    // Función para convertir las fechas
-    function convertirFecha(fechaISO) {
-        try {
-            // Separar la parte de la fecha y la hora usando la "T"
-            const [fecha, hora] = fechaISO.split('T');
-            const [horaCompleta] = hora.split('.'); // Ignorar la parte de los milisegundos
-
-            // Extraer día, mes, año de la fecha
-            const [anio, mes, dia] = fecha.split('-').map(Number);
-
-            // Extraer hora, minutos, segundos de la hora
-            const [horas, minutos, segundos] = horaCompleta.split(':').map(Number);
-
-            return {
-                dia: dia,
-                mes: mes,
-                anio: anio,
-                hora: horas,
-                minutos: minutos,
-                segundos: segundos,
-                fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
-            };
-        } catch (error) {
-            console.error("Error al convertir fecha: ", error);
-            return null; // Retorna null si hay algún error al convertir la fecha
+    // Función para obtener el nombre de la calle basado en coordenadas
+    async function obtenerNombreCalle(lat, lon) {
+        const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
+        const response = await fetch(url);
+        if (response.ok) {
+            const data = await response.json();
+            return data.address.road || 'Nombre de calle no disponible';
         }
-    }
-
-    // Función para calcular la diferencia de tiempo en horas, minutos y segundos
-    function calcularTiempoTotal(inicio, fin) {
-        const diferencia = Math.abs(fin - inicio) / 1000; // Diferencia en segundos
-        const horas = Math.floor(diferencia / 3600);
-        const minutos = Math.floor((diferencia % 3600) / 60);
-        const segundos = Math.floor(diferencia % 60);
-        return `${horas} horas, ${minutos} minutos, ${segundos} segundos`;
-    }
-
-    // Función para calcular la distancia total recorrida (Haversine)
-    function calcularDistanciaTotal(puntos) {
-        function haversine(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Radio de la Tierra en metros
-            const rad = Math.PI / 180;
-            const dLat = (lat2 - lat1) * rad;
-            const dLon = (lon2 - lon1) * rad;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                    Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c; // Distancia en metros
-        }
-
-        let distanciaTotal = 0;
-        for (let i = 1; i < puntos.length; i++) {
-            const [lat1, lon1] = puntos[i - 1];
-            const [lat2, lon2] = puntos[i];
-            distanciaTotal += haversine(lat1, lon1, lat2, lon2);
-        }
-        return (distanciaTotal / 1000).toFixed(2); // Convertir a kilómetros y devolver con 2 decimales
+        return 'Error al obtener el nombre de la calle';
     }
 
     // Guardar los archivos seleccionados en una variable
@@ -195,7 +146,7 @@
     });
 
     // Función para procesar los archivos cuando se presiona el botón
-    processButton.addEventListener('click', function() {
+    processButton.addEventListener('click', async function() {
         if (selectedFiles.length > 0) {
             statusElement.textContent = 'Procesando archivos...';
             allBounds = []; // Reiniciar bounds para evitar problemas
@@ -204,50 +155,37 @@
             specificZoom = false; // Restablecer la variable del zoom
 
             // Procesar cada archivo de forma independiente
-            Array.from(selectedFiles).forEach(function(file, index) {
-                Papa.parse(file, {
-                    header: false, // No tiene encabezado, usamos los índices de columna
-                    complete: function(results) {
+            for (const [index, file] of Array.from(selectedFiles).entries()) {
+                await Papa.parse(file, {
+                    header: false,
+                    complete: async function(results) {
                         var puntos = [];
                         var fechasCaptura = [];
 
                         // Itera sobre cada fila y extrae las coordenadas y fechas de las columnas correctas
-                        results.data.forEach(function(row) {
-                            const latitud = parseFloat(row[3]);  // Columna 4: latitud (índice 3)
-                            const longitud = parseFloat(row[4]); // Columna 5: longitud (índice 4)
-                            const fechaCaptura = convertirFecha(row[1]);  // Columna 2: fecha (índice 1)
-
-                            // Solo añadir puntos válidos
-                            if (!isNaN(latitud) && !isNaN(longitud) && fechaCaptura !== null) {
-                                puntos.push([latitud, longitud]); // Añade latitud y longitud al array de puntos
-                                fechasCaptura.push(fechaCaptura); // Guardar la fecha capturada
+                        for (const row of results.data) {
+                            const latitud = parseFloat(row[3]);
+                            const longitud = parseFloat(row[4]);
+                            if (!isNaN(latitud) && !isNaN(longitud)) {
+                                puntos.push([latitud, longitud]);
+                                fechasCaptura.push(row[1]);
                             }
-                        });
+                        }
 
-                        // Verificar si hay puntos válidos
+                        // Si tenemos puntos válidos
                         if (puntos.length > 0) {
-                            // Dibujar la ruta en el mapa para cada archivo
-                            var polyline = L.polyline(puntos, {color: colorsInMap[index % colorsInMap.length]}).addTo(map);
-                            polylines.push(polyline); // Guardar la ruta
+                            // Obtener el nombre de la calle para el primer punto de la ruta
+                            const nombreCalle = await obtenerNombreCalle(puntos[0][0], puntos[0][1]);
 
-                            // Obtener los bounds de la polyline
-                            var bounds = polyline.getBounds();
-                            if (bounds.isValid()) {
-                                allBounds.push(bounds); // Agregar bounds a la lista
-                            }
+                            // Dibujar la ruta en el mapa
+                            const polyline = L.polyline(puntos, {color: colorsInMap[index % colorsInMap.length]}).addTo(map);
+                            polylines.push(polyline);
 
-                            // Procesar fechas para mostrar solo las necesarias
-                            const fechasUnicas = [...new Set(fechasCaptura.map(f => `${f.dia}/${f.mes}/${f.anio}`))];
-                            const primeraFecha = fechasCaptura[0];
-                            const ultimaFecha = fechasCaptura[fechasCaptura.length - 1];
-                            const tiempoTotal = calcularTiempoTotal(primeraFecha.fechaCompleta, ultimaFecha.fechaCompleta);
-                            const distanciaTotal = calcularDistanciaTotal(puntos);
-
-                            // Añadir la ruta a la lista con un botón de zoom
-                            var routeItem = document.createElement('div');
+                            // Añadir la ruta a la lista con un botón de zoom y el nombre de la calle
+                            const routeItem = document.createElement('div');
                             routeItem.classList.add('routeItem');
                             routeItem.innerHTML = `
-                                <strong>Ruta ${index + 1} - Color: ${colorsInDisplay[index % colorsInDisplay.length]}</strong>
+                                <strong>Ruta ${index + 1} - ${nombreCalle} - Color: ${colorsInDisplay[index % colorsInDisplay.length]}</strong>
                                 <button class="routeButton" data-index="${index}">Zoom a esta ruta</button>
                             `;
                             routeListElement.appendChild(routeItem);
@@ -255,41 +193,23 @@
                             // Añadir evento al botón de zoom
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
                                 specificZoom = true; // Marcar que se está haciendo un zoom específico
-                                map.fitBounds(polyline.getBounds()); // Hacer zoom solo a la ruta seleccionada
-                                
-                                // Mostrar la información del archivo y los tiempos
-                                fileDisplayElement.innerHTML = `
-                                    <strong>Archivo seleccionado:</strong> ${file.name}<br>
-                                    <strong>Fechas capturadas:</strong> ${fechasUnicas.join(', ')}<br>
-                                    <strong>Hora de inicio:</strong> ${primeraFecha.hora}:${primeraFecha.minutos}:${primeraFecha.segundos}<br>
-                                    <strong>Hora de fin:</strong> ${ultimaFecha.hora}:${ultimaFecha.minutos}:${ultimaFecha.segundos}<br>
-                                    <strong>Tiempo total:</strong> ${tiempoTotal}<br>
-                                    <strong>Distancia total recorrida:</strong> ${distanciaTotal} km
-                                `;
+                                map.fitBounds(polyline.getBounds());
                             });
-                        } else {
-                            // Si no hay puntos válidos, mostrar un error
-                            statusElement.textContent = 'No se encontraron puntos válidos en el archivo: ' + file.name;
                         }
                     },
                     error: function() {
-                        // Si ocurre un error al leer el archivo CSV
                         statusElement.textContent = 'Error al procesar el archivo: ' + file.name;
                     }
                 });
-            });
+            }
 
-            // Ajustar el zoom globalmente para que todas las rutas sean visibles solo si no se ha hecho un zoom específico
+            // Ajustar el zoom globalmente para mostrar todas las rutas si no se hace un zoom específico
             setTimeout(function() {
                 if (!specificZoom && allBounds.length > 0) {
-                    var globalBounds = allBounds.reduce(function(acc, bound) {
-                        return acc.extend(bound);
-                    }, L.latLngBounds(allBounds[0]));
-
-                    map.fitBounds(globalBounds); // Ajustar el zoom para mostrar todas las rutas
+                    const globalBounds = allBounds.reduce((acc, bound) => acc.extend(bound), L.latLngBounds(allBounds[0]));
+                    map.fitBounds(globalBounds);
                 }
-            }, 500); // Espera a que todas las rutas se procesen antes de ajustar el zoom global
-
+            }, 500);
             statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
         } else {
             statusElement.textContent = 'Por favor selecciona al menos un archivo CSV.';
