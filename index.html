@@ -132,6 +132,24 @@
         return 'Error al obtener el nombre de la calle';
     }
 
+    // Función para determinar el nombre de la calle para la ruta
+    async function determinarNombreCalleRuta(puntos) {
+        let nombreCalle = 'Nombre de calle no disponible';
+        
+        // Recorremos los puntos buscando dos consecutivos con el mismo nombre de calle
+        for (let i = 0; i < puntos.length - 1; i++) {
+            const nombre1 = await obtenerNombreCalle(puntos[i][0], puntos[i][1]);
+            const nombre2 = await obtenerNombreCalle(puntos[i + 1][0], puntos[i + 1][1]);
+
+            if (nombre1 === nombre2 && nombre1 !== 'Nombre de calle no disponible') {
+                nombreCalle = nombre1;
+                break;
+            }
+        }
+        
+        return nombreCalle;
+    }
+
     // Guardar los archivos seleccionados en una variable
     document.getElementById('fileInput').addEventListener('change', function(event) {
         selectedFiles = event.target.files; // Obtiene los archivos seleccionados
@@ -170,8 +188,8 @@
 
                         // Si tenemos puntos válidos
                         if (puntos.length > 0) {
-                            // Obtener el nombre de la calle para el primer punto de la ruta
-                            const nombreCalle = await obtenerNombreCalle(puntos[0][0], puntos[0][1]);
+                            // Obtener el nombre de la calle usando la función de comparación
+                            const nombreCalle = await determinarNombreCalleRuta(puntos);
 
                             // Calcular distancia total, hora de inicio y fin, tiempo total
                             const distanciaTotal = calcularDistanciaTotal(puntos);
@@ -184,7 +202,7 @@
                             const polyline = L.polyline(puntos, {color: colorsInMap[index % colorsInMap.length]}).addTo(map);
                             polylines.push(polyline);
 
-                            // Añadir la ruta a la lista con un botón de zoom y el nombre de la calle
+                            // Añadir la ruta a la lista con el nombre de la calle correcto
                             const routeItem = document.createElement('div');
                             routeItem.classList.add('routeItem');
                             routeItem.innerHTML = `
@@ -221,21 +239,18 @@
     });
 
     // Función de conversión de fecha
-   function convertirFecha(fechaISO) {
-    const [fecha, hora] = fechaISO.split('T');
-    const [anio, mes, dia] = fecha.split('-').map(Number);
-
-    // Extraer la parte de la hora, minutos y segundos y eliminar milisegundos
-    const [horas, minutos, segundos] = hora.split(':').map(v => parseInt(v.split('.')[0], 10));
-
-    return {
-        dia,
-        mes,
-        anio,
-        hora: horas,
-        minutos,
-        segundos,
-        fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
+    function convertirFecha(fechaISO) {
+        const [fecha, hora] = fechaISO.split('T');
+        const [anio, mes, dia] = fecha.split('-').map(Number);
+        const [horas, minutos, segundos] = hora.split(':').map(v => parseInt(v.split('.')[0], 10));
+        return {
+            dia,
+            mes,
+            anio,
+            hora: horas,
+            minutos,
+            segundos,
+            fechaCompleta: new Date(fechaISO)
         };
     }
 
