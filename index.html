@@ -221,18 +221,21 @@
     });
 
     // Función de conversión de fecha
-    function convertirFecha(fechaISO) {
-        const [fecha, hora] = fechaISO.split('T');
-        const [anio, mes, dia] = fecha.split('-').map(Number);
-        const [horas, minutos, segundos] = hora.split(':')[0].split('.').map(Number);
-        return {
-            dia,
-            mes,
-            anio,
-            hora: horas,
-            minutos,
-            segundos,
-            fechaCompleta: new Date(fechaISO)
+   function convertirFecha(fechaISO) {
+    const [fecha, hora] = fechaISO.split('T');
+    const [anio, mes, dia] = fecha.split('-').map(Number);
+
+    // Extraer la parte de la hora, minutos y segundos y eliminar milisegundos
+    const [horas, minutos, segundos] = hora.split(':').map(v => parseInt(v.split('.')[0], 10));
+
+    return {
+        dia,
+        mes,
+        anio,
+        hora: horas,
+        minutos,
+        segundos,
+        fechaCompleta: new Date(fechaISO) // Para cálculos de tiempo
         };
     }
 
