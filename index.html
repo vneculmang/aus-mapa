@@ -121,9 +121,6 @@
     // Colores para mostrar en la interfaz (en español)
     var colorsInDisplay = ['azul', 'verde', 'rojo', 'naranja', 'morado', 'cian', 'magenta', 'amarillo', 'lima', 'marrón', 'rosado', 'gris', 'oliva', 'turquesa', 'azul marino'];
 
-    // Variable para controlar si se está haciendo zoom a una ruta específica
-    var specificZoom = false;
-
     // Función para obtener el nombre de la calle basado en coordenadas
     async function obtenerNombreCalle(lat, lon) {
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
@@ -152,7 +149,6 @@
             allBounds = []; // Reiniciar bounds para evitar problemas
             polylines = []; // Reiniciar las rutas
             routeListElement.innerHTML = ''; // Limpiar la lista de rutas
-            specificZoom = false; // Restablecer la variable del zoom
 
             // Procesar cada archivo de forma independiente
             for (const [index, file] of Array.from(selectedFiles).entries()) {
@@ -177,6 +173,13 @@
                             // Obtener el nombre de la calle para el primer punto de la ruta
                             const nombreCalle = await obtenerNombreCalle(puntos[0][0], puntos[0][1]);
 
+                            // Calcular distancia total, hora de inicio y fin, tiempo total
+                            const distanciaTotal = calcularDistanciaTotal(puntos);
+                            const primeraFecha = convertirFecha(fechasCaptura[0]);
+                            const ultimaFecha = convertirFecha(fechasCaptura[fechasCaptura.length - 1]);
+                            const tiempoTotal = calcularTiempoTotal(primeraFecha.fechaCompleta, ultimaFecha.fechaCompleta);
+                            const fechasUnicas = [...new Set(fechasCaptura.map(f => convertirFecha(f).dia + "/" + convertirFecha(f).mes + "/" + convertirFecha(f).anio))];
+
                             // Dibujar la ruta en el mapa
                             const polyline = L.polyline(puntos, {color: colorsInMap[index % colorsInMap.length]}).addTo(map);
                             polylines.push(polyline);
@@ -192,8 +195,17 @@
 
                             // Añadir evento al botón de zoom
                             routeItem.querySelector('.routeButton').addEventListener('click', function() {
-                                specificZoom = true; // Marcar que se está haciendo un zoom específico
                                 map.fitBounds(polyline.getBounds());
+
+                                // Mostrar la información del archivo y los tiempos
+                                fileDisplayElement.innerHTML = `
+                                    <strong>Archivo seleccionado:</strong> ${file.name}<br>
+                                    <strong>Fechas capturadas:</strong> ${fechasUnicas.join(', ')}<br>
+                                    <strong>Hora de inicio:</strong> ${primeraFecha.hora}:${primeraFecha.minutos}:${primeraFecha.segundos}<br>
+                                    <strong>Hora de fin:</strong> ${ultimaFecha.hora}:${ultimaFecha.minutos}:${ultimaFecha.segundos}<br>
+                                    <strong>Tiempo total:</strong> ${tiempoTotal}<br>
+                                    <strong>Distancia total recorrida:</strong> ${distanciaTotal} km
+                                `;
                             });
                         }
                     },
@@ -202,19 +214,58 @@
                     }
                 });
             }
-
-            // Ajustar el zoom globalmente para mostrar todas las rutas si no se hace un zoom específico
-            setTimeout(function() {
-                if (!specificZoom && allBounds.length > 0) {
-                    const globalBounds = allBounds.reduce((acc, bound) => acc.extend(bound), L.latLngBounds(allBounds[0]));
-                    map.fitBounds(globalBounds);
-                }
-            }, 500);
             statusElement.textContent = 'Archivo(s) procesado(s) exitosamente. Las rutas están dibujadas en el mapa.';
         } else {
             statusElement.textContent = 'Por favor selecciona al menos un archivo CSV.';
         }
     });
+
+    // Función de conversión de fecha
+    function convertirFecha(fechaISO) {
+        const [fecha, hora] = fechaISO.split('T');
+        const [anio, mes, dia] = fecha.split('-').map(Number);
+        const [horas, minutos, segundos] = hora.split(':')[0].split('.').map(Number);
+        return {
+            dia,
+            mes,
+            anio,
+            hora: horas,
+            minutos,
+            segundos,
+            fechaCompleta: new Date(fechaISO)
+        };
+    }
+
+    // Función para calcular la diferencia de tiempo en horas, minutos y segundos
+    function calcularTiempoTotal(inicio, fin) {
+        const diferencia = Math.abs(fin - inicio) / 1000;
+        const horas = Math.floor(diferencia / 3600);
+        const minutos = Math.floor((diferencia % 3600) / 60);
+        const segundos = Math.floor(diferencia % 60);
+        return `${horas} horas, ${minutos} minutos, ${segundos} segundos`;
+    }
+
+    // Función para calcular la distancia total recorrida (Haversine)
+    function calcularDistanciaTotal(puntos) {
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const rad = Math.PI / 180;
+            const dLat = (lat2 - lat1) * rad;
+            const dLon = (lon2 - lon1) * rad;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+        let distanciaTotal = 0;
+        for (let i = 1; i < puntos.length; i++) {
+            const [lat1, lon1] = puntos[i - 1];
+            const [lat2, lon2] = puntos[i];
+            distanciaTotal += haversine(lat1, lon1, lat2, lon2);
+        }
+        return (distanciaTotal / 1000).toFixed(2);
+    }
 </script>
 
 </body>
